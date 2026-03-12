@@ -1,0 +1,686 @@
+# Symbolon Codebase — Esoteric Brutalism Portfolio
+
+---
+
+## MagmaCanvas.tsx
+
+```tsx
+import { useEffect, useRef, useCallback } from "react";
+
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  life: number;
+  maxLife: number;
+  hue: number;
+}
+
+const PARTICLE_COUNT = 120;
+const PALETTE: readonly [number, number, number][] = [
+  [217, 119, 54],
+  [242, 192, 131],
+  [180, 80, 30],
+  [255, 160, 60],
+  [140, 55, 20],
+] as const;
+
+function createParticle(w: number, h: number): Particle {
+  const maxLife = 200 + Math.random() * 300;
+  return {
+    x: Math.random() * w,
+    y: Math.random() * h,
+    vx: (Math.random() - 0.5) * 0.4,
+    vy: (Math.random() - 0.5) * 0.4,
+    radius: 60 + Math.random() * 140,
+    life: Math.random() * maxLife,
+    maxLife,
+    hue: Math.floor(Math.random() * PALETTE.length),
+  };
+}
+
+export function MagmaCanvas(): JSX.Element {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
+  const rafRef = useRef<number>(0);
+  const sizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
+
+  const resize = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = Math.min(window.devicePixelRatio, 2);
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+    const ctx = canvas.getContext("2d");
+    if (ctx) ctx.scale(dpr, dpr);
+    sizeRef.current = { w, h };
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) return;
+
+    resize();
+    const { w, h } = sizeRef.current;
+    particlesRef.current = Array.from({ length: PARTICLE_COUNT }, () =>
+      createParticle(w, h),
+    );
+
+    const render = () => {
+      const { w: cw, h: ch } = sizeRef.current;
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.globalCompositeOperation = "lighter";
+
+      for (const p of particlesRef.current) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life += 1;
+
+        if (p.life > p.maxLife) {
+          Object.assign(p, createParticle(cw, ch));
+        }
+
+        const progress = p.life / p.maxLife;
+        const fade =
+          progress < 0.1
+            ? progress / 0.1
+            : progress > 0.8
+              ? (1 - progress) / 0.2
+              : 1;
+        const alpha = Math.max(0, fade * 0.12);
+        const [r, g, b] = PALETTE[p.hue];
+
+        const grad = ctx.createRadialGradient(
+          p.x,
+          p.y,
+          0,
+          p.x,
+          p.y,
+          p.radius,
+        );
+        grad.addColorStop(0, `rgba(${r},${g},${b},${alpha})`);
+        grad.addColorStop(0.4, `rgba(${r},${g},${b},${alpha * 0.4})`);
+        grad.addColorStop(1, "rgba(0,0,0,0)");
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.globalCompositeOperation = "source-over";
+      rafRef.current = requestAnimationFrame(render);
+    };
+
+    rafRef.current = requestAnimationFrame(render);
+    window.addEventListener("resize", resize);
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("resize", resize);
+    };
+  }, [resize]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100vh",
+        zIndex: 0,
+        pointerEvents: "none",
+      }}
+    />
+  );
+}
+```
+
+---
+
+## LuxuryGrain.tsx
+
+```tsx
+import { memo } from "react";
+
+const GRAIN_KEYFRAMES = `
+@keyframes luxGrainFlicker {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-1%, -1%); }
+  20% { transform: translate(-2%, 1%); }
+  30% { transform: translate(1%, -2%); }
+  40% { transform: translate(-1%, 2%); }
+  50% { transform: translate(-2%, -1%); }
+  60% { transform: translate(2%, 1%); }
+  70% { transform: translate(1%, 2%); }
+  80% { transform: translate(-1%, -1%); }
+  90% { transform: translate(2%, -2%); }
+}
+`;
+
+const NOISE_SVG =
+  "data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E";
+
+export const LuxuryGrain = memo(function LuxuryGrain(): JSX.Element {
+  return (
+    <>
+      <style>{GRAIN_KEYFRAMES}</style>
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          inset: 0,
+          width: "100vw",
+          height: "100vh",
+          zIndex: 10,
+          pointerEvents: "none",
+          mixBlendMode: "soft-light",
+          opacity: 0.04,
+          backgroundImage: `url("${NOISE_SVG}")`,
+          backgroundRepeat: "repeat",
+          animation: "luxGrainFlicker 0.15s steps(8) infinite",
+          willChange: "transform",
+        }}
+      />
+    </>
+  );
+});
+```
+
+---
+
+## SymbolonFooter.tsx
+
+```tsx
+import { memo, useCallback, useRef } from "react";
+
+const MONO = "'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace";
+const SERIF = "'Cormorant Garamond', 'Playfair Display', Georgia, serif";
+
+interface DataReadoutProps {
+  readonly label: string;
+  readonly value: string;
+}
+
+const DataReadout = memo(function DataReadout({
+  label,
+  value,
+}: DataReadoutProps): JSX.Element {
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <div
+        style={{
+          fontFamily: MONO,
+          fontSize: 9,
+          letterSpacing: "0.15em",
+          color: "#4a4a50",
+          textTransform: "uppercase",
+          borderBottom: "1px solid #1a1a1e",
+          paddingBottom: 4,
+          marginBottom: 8,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: MONO,
+          fontSize: 11,
+          color: "#8a7a65",
+          lineHeight: 1.7,
+          letterSpacing: "0.04em",
+          whiteSpace: "pre-line",
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+});
+
+const TITLE_LETTERS = "SYMBOLON".split("");
+
+export const SymbolonFooter = memo(function SymbolonFooter(): JSX.Element {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  const handleMouseEnter = useCallback(() => {
+    const el = titleRef.current;
+    if (el) el.style.backgroundPosition = "0 0";
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    const el = titleRef.current;
+    if (el) el.style.backgroundPosition = "100% 0";
+  }, []);
+
+  return (
+    <footer
+      style={{
+        position: "relative",
+        zIndex: 20,
+        width: "100%",
+        minHeight: "100vh",
+        backgroundColor: "#050505",
+        borderTop: "1px solid #1a1a1e",
+        display: "grid",
+        gridTemplateColumns: "60px 1fr 240px",
+        fontFamily: MONO,
+        color: "#6b6c70",
+      }}
+    >
+      {/* Spine Column */}
+      <div
+        style={{
+          borderRight: "1px solid #1a1a1e",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "40px 0",
+          backgroundColor: "#0a0a0c",
+        }}
+      >
+        <div
+          style={{
+            width: 28,
+            height: 28,
+            border: "1px solid #3a3a3e",
+            borderRadius: "50% 0 50% 50%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            fontFamily: SERIF,
+            fontStyle: "italic",
+            fontSize: 14,
+            color: "#c9a881",
+          }}
+        >
+          S
+        </div>
+        <div
+          style={{
+            writingMode: "vertical-rl",
+            transform: "rotate(180deg)",
+            fontSize: 9,
+            letterSpacing: "0.3em",
+            textTransform: "uppercase",
+            color: "#3a3a3e",
+          }}
+        >
+          SYMBOLON IDENTITY ARCH.
+        </div>
+      </div>
+
+      {/* Center Stage */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "80px 40px",
+          position: "relative",
+        }}
+      >
+        {/* Navigation Meta */}
+        <div
+          style={{
+            position: "absolute",
+            top: 40,
+            left: 40,
+            right: 40,
+            display: "flex",
+            justifyContent: "space-between",
+            borderBottom: "1px solid #1a1a1e",
+            paddingBottom: 8,
+          }}
+        >
+          <div style={{ display: "flex", gap: 28 }}>
+            {["IDX. ARCHIVE", "METHODOLOGY", "TRANSMIT"].map((link) => (
+              <span
+                key={link}
+                style={{
+                  fontSize: 10,
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  color: "#4a4a50",
+                  transition: "color 0.3s ease",
+                }}
+              >
+                {link}
+              </span>
+            ))}
+          </div>
+          <span
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.1em",
+              color: "#4a4a50",
+            }}
+          >
+            TRGT: 0.000, 0.000
+          </span>
+        </div>
+
+        {/* Hero Title */}
+        <h1
+          ref={titleRef}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          style={{
+            fontFamily: SERIF,
+            fontSize: "clamp(3rem, 7vw, 7.5rem)",
+            fontWeight: 300,
+            letterSpacing: "0.5em",
+            marginRight: "-0.5em",
+            textTransform: "uppercase",
+            lineHeight: 1,
+            marginBottom: 24,
+            cursor: "default",
+            background:
+              "linear-gradient(90deg, #d97736 0%, #f2c083 50%, #c9a881 50.01%, #8a7a65 100%)",
+            backgroundSize: "200% 100%",
+            backgroundPosition: "100% 0",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+            transition:
+              "background-position 0.8s cubic-bezier(0.65, 0, 0.35, 1)",
+            whiteSpace: "nowrap",
+            userSelect: "none",
+          }}
+        >
+          {TITLE_LETTERS.map((letter, i) => (
+            <span key={i}>{letter}</span>
+          ))}
+        </h1>
+
+        <div
+          style={{
+            fontFamily: SERIF,
+            fontSize: 14,
+            letterSpacing: "0.4em",
+            color: "#4a4a50",
+            textTransform: "uppercase",
+          }}
+        >
+          The Advantage of Mystery in Semiotic Design
+        </div>
+      </div>
+
+      {/* Data Panel */}
+      <div
+        style={{
+          borderLeft: "1px solid #1a1a1e",
+          padding: "40px 20px",
+          backgroundColor: "#0a0a0c",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+        }}
+      >
+        <div>
+          <DataReadout
+            label="System Status"
+            value={`OBSCURATION: ACTIVE\nREVELATION: PENDING\nFRAMEWORK: PEIRCEAN TRIAD`}
+          />
+          <DataReadout
+            label="Methodology"
+            value="A brand is not a logo; it is a sign functioning within an interpretive structure."
+          />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          {[
+            { title: "Icon", desc: "Form, topology, visual mimicry." },
+            { title: "Index", desc: "Evidence, trace, implication." },
+            { title: "Symbol", desc: "Convention, cultivated meaning." },
+          ].map((item) => (
+            <div
+              key={item.title}
+              style={{
+                border: "1px solid #1a1a1e",
+                padding: 12,
+                cursor: "pointer",
+                transition: "background-color 0.3s ease",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: SERIF,
+                  fontSize: 15,
+                  fontStyle: "italic",
+                  color: "#c9a881",
+                  marginBottom: 4,
+                }}
+              >
+                {item.title}
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: "#4a4a50" }}>
+                {item.desc}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </footer>
+  );
+});
+```
+
+---
+
+## Preloader.tsx
+
+```tsx
+import { useEffect, useRef, useCallback, memo } from "react";
+import gsap from "gsap";
+
+interface PreloaderProps {
+  readonly onComplete: () => void;
+}
+
+const MONO = "'JetBrains Mono', 'SF Mono', monospace";
+
+const STATUS_LINES: readonly string[] = [
+  "INIT: SYMBOLON CORE v4.2.1",
+  "LOAD: SEMIOTIC ENGINE",
+  "PARSE: PEIRCEAN TRIAD SCHEMA",
+  "BIND: VISUAL CORTEX PIPELINE",
+  "SCAN: TOPOLOGY MESH",
+  "LINK: OBSCURATION PROTOCOL",
+  "SYNC: REVELATION MATRIX",
+  "EXEC: IDENTITY ARCHITECTURE",
+  "MOUNT: FRACTAL NOISE LAYER",
+  "FUSE: AMBER PLASMA CORE",
+  "SEAL: VOID BOUNDARY",
+  "BOOT: COMPLETE — ENTERING VOID",
+] as const;
+
+export const Preloader = memo(function Preloader({
+  onComplete,
+}: PreloaderProps): JSX.Element {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const counterRef = useRef<HTMLDivElement>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
+  const completedRef = useRef(false);
+
+  const finish = useCallback(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+
+    gsap.to(wrapperRef.current, {
+      opacity: 0,
+      duration: 1.2,
+      ease: "power2.inOut",
+      onComplete,
+    });
+  }, [onComplete]);
+
+  useEffect(() => {
+    const counter = { value: 0 };
+    let statusIndex = 0;
+    const statusInterval = (4500 - 1200) / STATUS_LINES.length;
+
+    const statusTimer = setInterval(() => {
+      if (statusRef.current && statusIndex < STATUS_LINES.length) {
+        const line = document.createElement("div");
+        line.textContent = `> ${STATUS_LINES[statusIndex]}`;
+        line.style.opacity = "0";
+        statusRef.current.appendChild(line);
+        gsap.to(line, { opacity: 1, duration: 0.15, ease: "none" });
+        statusRef.current.scrollTop = statusRef.current.scrollHeight;
+        statusIndex++;
+      }
+    }, statusInterval);
+
+    const tl = gsap.timeline({ onComplete: finish });
+
+    tl.to(counter, {
+      value: 100,
+      duration: 4.5,
+      ease: "power1.inOut",
+      onUpdate: () => {
+        if (counterRef.current) {
+          counterRef.current.textContent = `${Math.floor(counter.value)}`;
+        }
+      },
+    });
+
+    return () => {
+      clearInterval(statusTimer);
+      tl.kill();
+    };
+  }, [finish]);
+
+  return (
+    <div
+      ref={wrapperRef}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        backgroundColor: "#000000",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        fontFamily: MONO,
+        color: "#d97736",
+        gap: 40,
+      }}
+    >
+      {/* Counter */}
+      <div
+        ref={counterRef}
+        style={{
+          fontSize: "clamp(4rem, 12vw, 10rem)",
+          fontWeight: 100,
+          letterSpacing: "-0.02em",
+          lineHeight: 1,
+          color: "#c9a881",
+          opacity: 0.9,
+        }}
+      >
+        0
+      </div>
+
+      {/* Status Console */}
+      <div
+        ref={statusRef}
+        style={{
+          width: "min(500px, 80vw)",
+          height: 180,
+          overflowY: "hidden",
+          fontSize: 10,
+          lineHeight: 1.8,
+          letterSpacing: "0.06em",
+          color: "#4a4a50",
+          textTransform: "uppercase",
+        }}
+      />
+
+      {/* Bottom Label */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 40,
+          fontSize: 9,
+          letterSpacing: "0.3em",
+          textTransform: "uppercase",
+          color: "#2a2a2e",
+        }}
+      >
+        SYMBOLON IDENTITY ARCHITECTURE
+      </div>
+    </div>
+  );
+});
+
+export default Preloader;
+```
+
+---
+
+## App.tsx
+
+```tsx
+import { useState, useCallback } from "react";
+import { MagmaCanvas } from "./components/MagmaCanvas";
+import { LuxuryGrain } from "./components/LuxuryGrain";
+import { SymbolonFooter } from "./components/SymbolonFooter";
+import { Preloader } from "./components/Preloader";
+
+export function App(): JSX.Element {
+  const [isBooted, setIsBooted] = useState(false);
+
+  const handleBootComplete = useCallback(() => {
+    setIsBooted(true);
+  }, []);
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        minHeight: "100vh",
+        backgroundColor: "#000000",
+        overflowX: "hidden",
+        overflowY: isBooted ? "auto" : "hidden",
+      }}
+    >
+      {!isBooted && <Preloader onComplete={handleBootComplete} />}
+
+      {/* Z:0 — Plasma Base Layer */}
+      <MagmaCanvas />
+
+      {/* Z:10 — Analog Film Grain */}
+      <LuxuryGrain />
+
+      {/* Z:20 — Content */}
+      <div style={{ position: "relative", zIndex: 20 }}>
+        <SymbolonFooter />
+      </div>
+    </div>
+  );
+}
+
+export default App;
+```
