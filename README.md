@@ -1,73 +1,43 @@
-# React + TypeScript + Vite
+# Symbolon
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A dark, esoteric brutalist web experience built as a vibe coding experiment — exploring how far AI-assisted development can push pure frontend craft.
 
-Currently, two official plugins are available:
+No backend. No framework logic. Just typography, motion, and atmosphere.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## What It Is
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Symbolon is a pure frontend aesthetic experiment. The goal was simple: give an AI agent a design direction and see how close to production-grade it gets on the first pass.
 
-## Expanding the ESLint configuration
+The result is a fully animated, dark brutalist interface featuring:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Massive fluid typography with `clamp()` scaling
+- Text scramble animations on hover — characters cycle through random symbols before resolving
+- Scanline and film grain overlays for a CRT aesthetic
+- Scroll-triggered reveal animations via `IntersectionObserver`
+- Live millisecond clock and randomized coordinate feed
+- Animated SVG sine wave
+- Noise texture background layer
+- Custom amber-on-black color system with glow effects
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Stack
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- React + TypeScript
+- Vite
+- Tailwind CSS
+- Cormorant Garamond + Space Mono (Google Fonts)
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Live
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+[project-symbolon.vercel.app](https://project-symbolon.vercel.app)
+
+---
+
+## Note
+
+This project was built entirely through vibe coding — AI-generated from a design brief. Zero manual implementation. The purpose was to evaluate the quality ceiling of agentic frontend generation, not to ship a product.
